@@ -9,7 +9,7 @@ Note 2: this add-on is using an open-source JavaScript library for the unzip ope
 You can install this app as a PWA on your mobile device, moreover, it is available as a browser extension as-well-as a web application:
 
 Chrome: https://chrome.google.com/webstore/detail/zip-reader/hppjaadfhhgadeokjndmbnjnegagcadd  
-Edge:   
+Edge: https://microsoftedge.microsoft.com/addons/detail/kaapmbaacnhocgghfbbpicfoajgpnajh  
 Firefox: https://addons.mozilla.org/en-US/firefox/addon/zip-reader/  
 Opera: https://addons.opera.com/en/extensions/details/zip-reader/  
 Webapp & PWA: https://webbrowsertools.com/zip-reader/  
