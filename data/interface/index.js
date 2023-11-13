@@ -1,20 +1,30 @@
 var background = (function () {
-  var tmp = {};
+  let tmp = {};
   if (chrome && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener(function (request) {
-      for (var id in tmp) {
+      for (let id in tmp) {
         if (tmp[id] && (typeof tmp[id] === "function")) {
           if (request.path === "background-to-popup") {
-            if (request.method === id) tmp[id](request.data);
+            if (request.method === id) {
+              tmp[id](request.data);
+            }
           }
         }
       }
     });
     /*  */
     return {
-      "receive": function (id, callback) {tmp[id] = callback},
+      "receive": function (id, callback) {
+        tmp[id] = callback;
+      },
       "send": function (id, data) {
-        chrome.runtime.sendMessage({"path": "popup-to-background", "method": id, "data": data});
+        chrome.runtime.sendMessage({
+          "method": id,
+          "data": data,
+          "path": "popup-to-background"
+        }, function () {
+          return chrome.runtime.lastError;
+        });
       }
     }
   } else {
@@ -32,13 +42,18 @@ var config = {
       e.preventDefault();
     }
   },
+  "addon": {
+    "homepage": function () {
+      return chrome.runtime.getManifest().homepage_url;
+    }
+  },
   "resize": {
     "timeout": null,
     "method": function () {
       if (config.port.name === "win") {
         if (config.resize.timeout) window.clearTimeout(config.resize.timeout);
         config.resize.timeout = window.setTimeout(async function () {
-          var current = await chrome.windows.getCurrent();
+          const current = await chrome.windows.getCurrent();
           /*  */
           config.storage.write("interface.size", {
             "top": current.top,
@@ -54,7 +69,7 @@ var config = {
     "name": '',
     "connect": function () {
       config.port.name = "webapp";
-      var context = document.documentElement.getAttribute("context");
+      const context = document.documentElement.getAttribute("context");
       /*  */
       if (chrome.runtime) {
         if (chrome.runtime.connect) {
@@ -86,7 +101,7 @@ var config = {
     "write": function (id, data) {
       if (id) {
         if (data !== '' && data !== null && data !== undefined) {
-          var tmp = {};
+          let tmp = {};
           tmp[id] = data;
           config.storage.local[id] = data;
           chrome.storage.local.set(tmp, function () {});
@@ -103,7 +118,7 @@ var config = {
     "permission": undefined,
     "read": {
       "zip": function (target) {
-        var filelist = document.getElementById("filelist");
+        const filelist = document.getElementById("filelist");
         /*  */
         config.zip.files = [];
         config.zip.blob = null;
@@ -115,13 +130,13 @@ var config = {
     		config.zip.model.getEntries(target, function (entries) {
     			entries.forEach(function (file) {
             if (file.directory) {
-              var li = document.createElement("li");
+              const li = document.createElement("li");
               li.textContent = "> " + file.filename;
               li.setAttribute("class", "folder");
               if (file.offset === 0) li.setAttribute("root", '');
               filelist.appendChild(li);
             } else {
-              var li = document.createElement("li");
+              const li = document.createElement("li");
               li.setAttribute("path", file.filename);
               li.setAttribute("class", "file");
       				li.textContent = file.filename;
@@ -160,14 +175,14 @@ var config = {
             const name = arr.pop();
             let subdir = null;
             /*  */
-            for (var i = 0; i < arr.length; i++) {
-              var target = subdir ? subdir : root;
+            for (let i = 0; i < arr.length; i++) {
+              const target = subdir ? subdir : root;
               subdir = await target.getDirectoryHandle(arr[i], {"create": true});
             }
             /*  */
-            var target = subdir ? subdir : root;
-            var file = await target.getFileHandle(name, {"create": true});
-            var writable = await file.createWritable();
+            const target = subdir ? subdir : root;
+            const file = await target.getFileHandle(name, {"create": true});
+            const writable = await file.createWritable();
             /*  */
             await writable.write(blob);
             writable.close();
@@ -176,15 +191,15 @@ var config = {
           }
         }
       } else {
-        var url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         /*  */
         if (chrome && chrome.permissions) {
-          var granted = await chrome.permissions.request({"permissions": ["downloads"]});
+          const granted = await chrome.permissions.request({"permissions": ["downloads"]});
           if (granted) {
             await chrome.downloads.download({"url": url, "filename": path});
           }
         } else {
-          var a = document.createElement('a');
+          const a = document.createElement('a');
           a.setAttribute("download", path);
           a.setAttribute("href", url);
           a.click();
@@ -193,9 +208,9 @@ var config = {
         }
       }
       /*  */
-      var filelist = document.getElementById("filelist");
-      var li = filelist.querySelector("li[class='file'][path='" + filename + "']");
-      var progress = li ? li.querySelector("progress") : null;
+      const filelist = document.getElementById("filelist");
+      const li = filelist.querySelector("li[class='file'][path='" + filename + "']");
+      const progress = li ? li.querySelector("progress") : null;
       if (progress) progress.remove();
       if (callback) callback();
     }
@@ -208,7 +223,7 @@ var config = {
 		"onerror": function (e) {alert(e)},
     "onprogress": function (current, total, target) {
       if (target) {
-        var progress = document.createElement("progress");
+        const progress = document.createElement("progress");
         /*  */
         progress.max = total;
         progress.value = current;
@@ -231,9 +246,9 @@ var config = {
 			"getEntries": async function (file, onzipend) {
         zip.configure({"useWebWorkers": true});
         /*  */
-        var reader = new zip.ZipReader(new zip.BlobReader(file));
+        const reader = new zip.ZipReader(new zip.BlobReader(file));
         if (reader) {
-          var entries = await reader.getEntries();
+          const entries = await reader.getEntries();
           if (entries && entries.length) {
             onzipend(entries);
           } else {
@@ -246,16 +261,16 @@ var config = {
 			"getEntryFile": async function (entry, target, onzipend) {
         zip.configure({"useWebWorkers": true});
         /*  */
-        var buffer = await entry.getData(new zip.BlobWriter(), { 
+        const buffer = await entry.getData(new zip.BlobWriter(), { 
           "onprogress": function (current, total) {
             config.zip.onprogress(current, total, target);
           }
         });
         /*  */
         if (buffer) {
-          var type = zip.getMimeType(entry.filename);
+          const type = zip.getMimeType(entry.filename);
           if (type) {
-            var blob = new Blob([buffer], {"type": type});
+            const blob = new Blob([buffer], {"type": type});
             if (blob) onzipend(blob);
           } else {
             config.zip.onerror("Error >> getMimeType");
@@ -267,12 +282,12 @@ var config = {
 		}
 	},
   "load": function () {
-    var fileio = document.getElementById("fileio");
-    var reload = document.getElementById("reload");
-    var support = document.getElementById("support");
-    var donation = document.getElementById("donation");
-    var download = document.getElementById("download");
-    var filename = document.getElementById("filename");
+    const fileio = document.getElementById("fileio");
+    const reload = document.getElementById("reload");
+    const support = document.getElementById("support");
+    const donation = document.getElementById("donation");
+    const download = document.getElementById("download");
+    const filename = document.getElementById("filename");
     /*  */
     reload.addEventListener("click", function () {
       document.location.reload();
@@ -280,14 +295,14 @@ var config = {
     /*  */
     support.addEventListener("click", function () {
       if (config.port.name !== "webapp") {
-        var url = config.addon.homepage();
+        const url = config.addon.homepage();
         chrome.tabs.create({"url": url, "active": true});
       }
     }, false);
     /*  */
     donation.addEventListener("click", function () {
       if (config.port.name !== "webapp") {
-        var url = config.addon.homepage() + "?reason=support";
+        const url = config.addon.homepage() + "?reason=support";
         chrome.tabs.create({"url": url, "active": true});
       }
     }, false);
@@ -296,7 +311,7 @@ var config = {
       if (e.target) {
         if (e.target.files) {
           if (e.target.files.length) {
-            var file = e.target.files[0];
+            const file = e.target.files[0];
             config.fileio.read.zip(file);
           }
         }
@@ -309,10 +324,10 @@ var config = {
           const files = [...config.zip.files];
           /*  */
           config.download.initiate(function () {
-            var loop = function (file) {
-              var filelist = document.getElementById("filelist");
-              var path = (filename.value ? filename.value + '/' : '') + file.filename;
-              var li = filelist.querySelector("li[class='file'][path='" + file.filename + "']");
+            const loop = function (file) {
+              const filelist = document.getElementById("filelist");
+              const path = (filename.value ? filename.value + '/' : '') + file.filename;
+              const li = filelist.querySelector("li[class='file'][path='" + file.filename + "']");
               /*  */
               config.zip.model.getEntryFile(file, li, function (blob) {
                 config.zip.blob = blob;
