@@ -136,7 +136,7 @@ ul li {
 .filename input {
   padding: 0;
   width: 100%;
-  color: #555;
+  color: #333;
   height: 42px;
   outline: none;
   font-size: 13px;
@@ -196,6 +196,7 @@ ul li {
   outline: none;
   color: #6b9412;
   cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
   vertical-align: middle;
   background-color: #fff;
@@ -226,7 +227,7 @@ ul li {
 }
 
 .toolbar div svg {
-	fill: #858585;
+	fill: #555;
   pointer-events: none;
 	vertical-align: middle;
 }

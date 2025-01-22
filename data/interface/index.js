@@ -143,7 +143,7 @@ var config = {
               config.zip.files.push(file);
       				filelist.appendChild(li);
               /*  */
-      				li.addEventListener("click", function (e) {
+      				li.addEventListener("click", async function (e) {
                 if (e.detail === 2) {
                   config.zip.download(file, li);
                 }
@@ -155,48 +155,55 @@ var config = {
     }
   },
   "download": {
+    "permission": undefined,
     "initiate": async function (callback) {
       config.fileio.api = window.showDirectoryPicker ? "supported" : "unsupported";
       if (config.fileio.api === "supported") {
         try {
           if (!config.fileio.picker) config.fileio.picker = await window.showDirectoryPicker();
           config.fileio.permission = await config.fileio.picker.requestPermission({"mode": "readwrite"});
-        } catch (e) {}
+        } catch (e) {
+          //
+        }
+      } else {
+        if (chrome && chrome.permissions) {
+          const flag = await chrome.permissions.request({"permissions": ["downloads"]});
+          config.download.permission = flag === true || flag === "granted" ? "granted" : "denied";
+        }
       }
       /*  */
       if (callback) callback();
     },
     "start": async function (blob, path, filename, callback) {
-      if (config.fileio.api === "supported") {
-        if (config.fileio.permission === "granted") {
-          try {
-            const root = config.fileio.picker;
-            const arr = path.split('/');
-            const name = arr.pop();
-            let subdir = null;
-            /*  */
-            for (let i = 0; i < arr.length; i++) {
-              const target = subdir ? subdir : root;
-              subdir = await target.getDirectoryHandle(arr[i], {"create": true});
-            }
-            /*  */
+      if (config.fileio.permission === "granted") {
+        try {
+          const root = config.fileio.picker;
+          const arr = path.split('/');
+          const name = arr.pop();
+          let subdir = null;
+          /*  */
+          for (let i = 0; i < arr.length; i++) {
             const target = subdir ? subdir : root;
-            const file = await target.getFileHandle(name, {"create": true});
-            const writable = await file.createWritable();
-            /*  */
-            await writable.write(blob);
-            writable.close();
-          } catch (e) {
-            config.zip.onerror("Error >> FileSystem API");
+            subdir = await target.getDirectoryHandle(arr[i], {"create": true});
           }
+          /*  */
+          const target = subdir ? subdir : root;
+          const file = await target.getFileHandle(name, {"create": true});
+          const writable = await file.createWritable();
+          /*  */
+          await writable.write(blob);
+          writable.close();
+        } catch (e) {
+          config.zip.onerror("Error >> FileSystem API");
         }
       } else {
         const url = URL.createObjectURL(blob);
         /*  */
-        if (chrome && chrome.permissions) {
-          const granted = await chrome.permissions.request({"permissions": ["downloads"]});
-          if (granted) {
+        if (config.download.permission === "granted") {
+          try {
             await chrome.downloads.download({"url": url, "filename": path});
+          } catch (e) {
+            config.zip.onerror("Error >> Downloads API");
           }
         } else {
           const a = document.createElement('a');
@@ -244,7 +251,7 @@ var config = {
 		},
 		"model": {
 			"getEntries": async function (file, onzipend) {
-        zip.configure({"useWebWorkers": true});
+        zip.configure({"useWebWorkers": navigator.userAgent.indexOf("Firefox") === -1});
         /*  */
         const reader = new zip.ZipReader(new zip.BlobReader(file));
         if (reader) {
@@ -259,7 +266,7 @@ var config = {
         }
       },
 			"getEntryFile": async function (entry, target, onzipend) {
-        zip.configure({"useWebWorkers": true});
+        zip.configure({"useWebWorkers": navigator.userAgent.indexOf("Firefox") === -1});
         /*  */
         const buffer = await entry.getData(new zip.BlobWriter(), { 
           "onprogress": function (current, total) {
