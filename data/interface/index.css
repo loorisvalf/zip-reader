@@ -131,12 +131,13 @@ ul li {
 
 .filelist {
 	text-align: left;
+  position: relative;
 }
 
 .filename input {
   padding: 0;
   width: 100%;
-  color: #333;
+  color: #000;
   height: 42px;
   outline: none;
   font-size: 13px;
@@ -158,6 +159,7 @@ ul li {
 }
 
 .file {
+  color: #588100;
   text-indent: 35px;
 }
 
@@ -196,7 +198,7 @@ ul li {
   outline: none;
   color: #6b9412;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   vertical-align: middle;
   background-color: #fff;
@@ -232,6 +234,32 @@ ul li {
 	vertical-align: middle;
 }
 
+#theme {
+  top: 0;
+  right: 0;
+  padding: 0;
+  width: 42px;
+  height: 40px;
+  display: flex;
+  cursor: pointer;
+  line-height: 38px;
+  position: absolute;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  transition: 300ms ease all;
+}
+
+#theme svg {
+	fill: #555;
+  pointer-events: none;
+	vertical-align: middle;
+}
+
+#theme:hover {
+  background-color: #f1f1f1;
+}
+
 @media (max-width: 500px) {
 	table {
     border-spacing: 5px;
@@ -250,4 +278,61 @@ ul li {
 
 html[context="webapp"] .toolbar {
   display: none;
+}
+
+html[theme='dark'], 
+html[theme='dark'] body {
+  color: #ebebeb;
+  color-scheme: dark;
+  background-color: #1e1e1e;
+}
+
+html[theme='dark'] .container,
+html[theme='dark'] .filename input,
+html[theme='dark'] .download input {
+  color: #ebebeb;
+  background-color: #1e1e1e;
+}
+
+html[theme='dark'] .download input {
+  color: #6d9b08;
+}
+
+html[theme='dark'] ul li {
+  color: #ebebeb;
+}
+
+html[theme='dark'] .file {
+  color: #76ad00;
+}
+
+html[theme='dark'] ul {
+  background-color: #1e1e1e;
+}
+
+html[theme='dark'] .filename,
+html[theme='dark'] .download,
+html[theme='dark'] .filelist {
+  background-color: rgb(255 255 255 / 5%);
+}
+
+html[theme='dark'] #theme:hover,
+html[theme='dark'] .toolbar div:hover,
+html[theme='dark'] .download input:hover {
+  background-color: rgb(255 255 255 / 5%);
+}
+
+html[theme='dark'] ul,
+html[theme='dark'] .upload,
+html[theme='dark'] .filename, 
+html[theme='dark'] .download, 
+html[theme='dark'] .filelist,
+html[theme='dark'] .filename input,
+html[theme='dark'] .download input {
+  border-color: rgb(255 255 255 / 15%);
+}
+
+html[theme='dark'] #theme svg,
+html[theme='dark'] .toolbar div svg {
+  fill: #ebebeb;
 }

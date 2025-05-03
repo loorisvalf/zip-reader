@@ -1,39 +1,65 @@
-var background = (function () {
-  let tmp = {};
-  if (chrome && chrome.runtime && chrome.runtime.onMessage) {
-    chrome.runtime.onMessage.addListener(function (request) {
-      for (let id in tmp) {
-        if (tmp[id] && (typeof tmp[id] === "function")) {
-          if (request.path === "background-to-popup") {
-            if (request.method === id) {
-              tmp[id](request.data);
+var background = {
+  "port": null,
+  "message": {},
+  "receive": function (id, callback) {
+    if (id) {
+      background.message[id] = callback;
+    }
+  },
+  "connect": function (port) {
+    chrome.runtime.onMessage.addListener(background.listener); 
+    /*  */
+    if (port) {
+      background.port = port;
+      background.port.onMessage.addListener(background.listener);
+      background.port.onDisconnect.addListener(function () {
+        background.port = null;
+      });
+    }
+  },
+  "post": function (id, data) {
+    if (id) {
+      if (background.port) {
+        background.port.postMessage({
+          "method": id,
+          "data": data,
+          "port": background.port.name,
+          "path": "popup-to-background"
+        });
+      }
+    }
+  },
+  "send": function (id, data) {
+    if (id) {
+      if (background.port) {
+        if (background.port.name !== "webapp") {
+          chrome.runtime.sendMessage({
+            "method": id,
+            "data": data,
+            "path": "popup-to-background"
+          }, function () {
+            return chrome.runtime.lastError;
+          });
+        }
+      }
+    }
+  },
+  "listener": function (e) {
+    if (e) {
+      for (let id in background.message) {
+        if (background.message[id]) {
+          if ((typeof background.message[id]) === "function") {
+            if (e.path === "background-to-popup") {
+              if (e.method === id) {
+                background.message[id](e.data);
+              }
             }
           }
         }
       }
-    });
-    /*  */
-    return {
-      "receive": function (id, callback) {
-        tmp[id] = callback;
-      },
-      "send": function (id, data) {
-        chrome.runtime.sendMessage({
-          "method": id,
-          "data": data,
-          "path": "popup-to-background"
-        }, function () {
-          return chrome.runtime.lastError;
-        });
-      }
-    }
-  } else {
-    return {
-      "send": function () {},
-      "receive": function () {}
     }
   }
-})();
+};
 
 var config = {
   "prevent": {
@@ -45,6 +71,12 @@ var config = {
   "addon": {
     "homepage": function () {
       return chrome.runtime.getManifest().homepage_url;
+    }
+  },
+  "app": {
+    "start": function () {
+      const theme = config.storage.read("theme") !== undefined ? config.storage.read("theme") : "light";
+      document.documentElement.setAttribute("theme", theme !== undefined ? theme : "light");
     }
   },
   "resize": {
@@ -289,6 +321,7 @@ var config = {
 		}
 	},
   "load": function () {
+    const theme = document.getElementById("theme");
     const fileio = document.getElementById("fileio");
     const reload = document.getElementById("reload");
     const support = document.getElementById("support");
@@ -312,6 +345,14 @@ var config = {
         const url = config.addon.homepage() + "?reason=support";
         chrome.tabs.create({"url": url, "active": true});
       }
+    }, false);
+    /*  */
+    theme.addEventListener("click", function () {
+      let attribute = document.documentElement.getAttribute("theme");
+      attribute = attribute === "dark" ? "light" : "dark";
+      /*  */
+      document.documentElement.setAttribute("theme", attribute);
+      config.storage.write("theme", attribute);
     }, false);
     /*  */
     fileio.addEventListener("change", function (e) {
@@ -366,13 +407,15 @@ var config = {
       }
     });
     /*  */
+    config.storage.load(config.app.start);
     window.removeEventListener("load", config.load, false);
   }
 };
 
 config.port.connect();
 
-window.addEventListener("load", config.load, false);
 document.addEventListener("drop", config.prevent.drop, true);
-window.addEventListener("resize", config.resize.method, false);
 document.addEventListener("dragover", config.prevent.drop, true);
+
+window.addEventListener("load", config.load, false);
+window.addEventListener("resize", config.resize.method, false);
